@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>1090047335211-tipb4f5lpqj56klbgj2nrnvtgjfe24df.apps.googleusercontent.com</string>
+	<string>1090047335211-puin33b28fedbnv2g5ne261c7svko5dg.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.1090047335211-tipb4f5lpqj56klbgj2nrnvtgjfe24df</string>
+	<string>com.googleusercontent.apps.1090047335211-puin33b28fedbnv2g5ne261c7svko5dg</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDJyyw8g2XdC_Fk3HFqD4UmzwxeSKwnSCw</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>Alexendre.Programmation</string>
+	<string>Alexendre.Programmation.esiea</string>
 	<key>PROJECT_ID</key>
 	<string>programmationesiea</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,7 +29,7 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:1090047335211:ios:8abb6f61ba18c430</string>
+	<string>1:1090047335211:ios:0c7310c9df73a2da</string>
 	<key>DATABASE_URL</key>
 	<string>https://programmationesiea.firebaseio.com</string>
 </dict>

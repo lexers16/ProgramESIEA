@@ -16,7 +16,7 @@ import FirebaseInstanceID
 import FirebaseMessaging
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, MessagingDelegate {
 
     var window: UIWindow?
 
@@ -24,25 +24,42 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?)
         -> Bool {
-            FirebaseApp.configure()
             
+            FirebaseApp.configure()
+            InstanceID.instanceID().instanceID { (result, error) in
+                if let error = error {
+                    print("Error fetching remote instance ID: \(error)")
+                } else if let result = result {
+                    print("Remote instance ID token: \(result.token)")
+//                    self.instanceIDTokenMessage.text  = "Remote InstanceID token: \(result.token)"
+                }
+            }
+            // Register for remote notifications. This shows a permission dialog on first run, to
+            // show the dialog at a more appropriate time move this registration accordingly.
             if #available(iOS 10.0, *) {
-                // For iOS 10 display notification (sent via APNS)
-                UNUserNotificationCenter.current().delegate = self as! UNUserNotificationCenterDelegate
-                
                 let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
                 UNUserNotificationCenter.current().requestAuthorization(
-                    options: authOptions,
-                    completionHandler: {_, _ in })
+                options: authOptions) {_,_ in }
+                // For iOS 10 display notification (sent via APNS)
+                UNUserNotificationCenter.current().delegate = self
             } else {
                 let settings: UIUserNotificationSettings =
                     UIUserNotificationSettings(types: [.alert, .badge, .sound], categories: nil)
                 application.registerUserNotificationSettings(settings)
             }
-            
             application.registerForRemoteNotifications()
+            Messaging.messaging().delegate = self as MessagingDelegate
             
+           
+            
+
             return true
+    }
+    
+    
+    // MARK: - MessagingDelegate
+    func messaging(_ messaging: Messaging, didRefreshRegistrationToken fcmToken: String) {
+        print(fcmToken)
     }
     
     
@@ -116,5 +133,41 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
     }
 
+}
+
+extension AppDelegate : UNUserNotificationCenterDelegate {
+    
+    // Receive displayed notifications for iOS 10 devices.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        let userInfo = notification.request.content.userInfo
+//        showAlert(withUserInfo: userInfo)
+        
+        // Change this to your preferred presentation option
+        completionHandler([])
+    }
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+        ) {
+        let tokenParts = deviceToken.map { data in String(format: "%02.2hhx", data) }
+        let token = tokenParts.joined()
+        print("Device Token: \(token)")
+    }
+    
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        print("Failed to register: \(error)")
+    }
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        let userInfo = response.notification.request.content.userInfo
+//        showAlert(withUserInfo: userInfo)
+        
+        completionHandler()
+    }
 }
 
