@@ -14,27 +14,30 @@ import CoreData
 class ViewController: UIViewController {
     let cellIdentifier = "CellIdentifier"
     let link = "https://api.themoviedb.org/4/list/1?page=1&api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR"
-    let link2 = "https://api.themoviedb.org/3/search/movie?api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR&query=iron&page=1&include_adult=true"
     var dict =  Dictionary<String , Any>()
     var dictionnary = NSDictionary()
     let background = UIImageView()
     var tmpDict : Dictionary<String,NSDictionary> = Dictionary<String,NSDictionary>()
     var seachBar : UISearchBar = UISearchBar()
     var tableSearch : UITableView = UITableView()
+    var searchResults : [Dictionary<String,NSObject>] = [Dictionary<String,NSObject>]()
 
 
     var table : UICollectionView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
-//
-//        let sb = UIStoryboard.init(name: "Main", bundle: nil)
-//        let vc = sb.instantiateViewController(withIdentifier: "launchAniamtion")
-//        self.present(vc, animated: false, completion: nil)
+
         seachBar.delegate = self
-        loadData(lien: link2)
         
-        seachBar.frame = CGRect(x: self.view.safeAreaInsets.left, y: self.view.safeAreaInsets.top, width: self.view.bounds.width, height: 40)
+        seachBar.frame = CGRect(x: self.view.safeAreaInsets.left, y: (self.navigationController?.navigationBar.frame.maxY)!, width: self.view.bounds.width, height: 40)
+        seachBar.returnKeyType = .go
+        tableSearch.frame = CGRect(x: self.view.safeAreaInsets.left, y: seachBar.frame.maxY, width: self.view.bounds.width, height: self.view.bounds.height - seachBar.frame.maxY)
+        tableSearch.alpha = 0
+        tableSearch.register(UITableViewCell.self, forCellReuseIdentifier: "CellResult")
+        
+        tableSearch.dataSource = self
+        tableSearch.delegate = self
         
         let layout: UICollectionViewFlowLayout = UICollectionViewFlowLayout()
         layout.sectionInset = UIEdgeInsets(top: 50, left: 10, bottom: 5, right: 10)
@@ -53,7 +56,7 @@ class ViewController: UIViewController {
 //        table.rowHeight = 400
         table.backgroundColor = UIColor.clear
         table.register(Cells.self, forCellWithReuseIdentifier: "MyCell")
-        self.navigationController?.navigationBar.isHidden = true
+//        self.navigationController?.navigationBar.isHidden = true
         self.view.addSubview(seachBar)
         loadfromserver()
     }
@@ -67,22 +70,28 @@ class ViewController: UIViewController {
     }
     
     
-    func  loadData(lien : String){
-        DispatchQueue.main.async {
-            
+    func  loadData(searchedText : String) -> NSArray{
+        let group = DispatchGroup() // initialize
+        let List = NSArray()
         
+
+        let lien = "https://api.themoviedb.org/3/search/movie?api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR&query=\(searchedText)&page=1&include_adult=false"
         Alamofire.request(lien, parameters: nil ,headers: nil) .responseJSON { response in
             if response.result.value != nil {
                 let test = response.result.value as! NSDictionary
                 let valu = test["results"] as! NSArray
                 for key in valu{
                     let value = key as? NSDictionary
-                    self.tmpDict[String(value?["id"] as! Int)] = value
+                    if !self.searchResults.contains(value as! [String : NSObject]){
+                    self.searchResults.append(value as! [String : NSObject])
+                    }
+                    print(key)
                 }
             }
         }
             print(self.tmpDict)
-        }
+        
+        return List
     }
     
     
@@ -121,8 +130,6 @@ class ViewController: UIViewController {
                 
                 // Save the data to coredata
                 (UIApplication.shared.delegate as! AppDelegate).saveContext()
-                
-//                let _ = navigationController?.popViewController(animated: true)
                 
 //                    }
                 }
@@ -176,11 +183,42 @@ class ViewController: UIViewController {
 
 extension ViewController : UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        print("text changed")
+        print(searchBar.text)
+        if(searchBar.text != "" && !self.view.subviews.contains(tableSearch)){
+            self.view.addSubview(tableSearch)
+            UIView.animate(withDuration: 0.2) {
+                self.tableSearch.alpha = 1
+            }}
+        if searchBar.text!.count >= 3 {
+        DispatchQueue.main.async {
+            self.loadData(searchedText : searchBar.text ?? "")
+            
+            }
+        }
+        
+        
+        if(searchBar.text == "" && self.view.subviews.contains(tableSearch)){
+            self.view.addSubview(tableSearch)
+            UIView.animate(withDuration: 0.2, animations: {
+                self.tableSearch.alpha = 0
+            }) { (true) in
+                self.tableSearch.removeFromSuperview()
+            }
+        }
     }
     
-    func searchBarTextDidBeginEditing(_ searchBar: UISearchBar) {
+    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
+        searchBar.endEditing(true)
+    }
+
     
+    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
+        self.view.addSubview(tableSearch)
+        UIView.animate(withDuration: 0.2, animations: {
+            self.tableSearch.alpha = 0
+        }) { (true) in
+            self.tableSearch.removeFromSuperview()
+        }
     }
 }
 
@@ -223,6 +261,14 @@ extension ViewController : UICollectionViewDataSource {
         return dictionnary.allKeys.count
     }
     
+    
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        self.seachBar.endEditing(true)
+    }
+    
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        self.seachBar.endEditing(true)
+    }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MyCell", for: indexPath) as! Cells
@@ -341,6 +387,29 @@ class Cells : UICollectionViewCell{
         
         print(backgroung.image as Any)
     }
+}
+
+extension ViewController : UITableViewDelegate {
+    
+    
+}
+
+extension ViewController : UITableViewDataSource {
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        
+        return searchResults.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "CellResult", for: indexPath)
+        cell.textLabel?.text = "test"
+        return cell
+    }
+    
+    
+    
+    
+    
 }
 
 
