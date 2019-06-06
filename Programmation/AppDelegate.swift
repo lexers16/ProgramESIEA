@@ -141,7 +141,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        let userInfo = notification.request.content.userInfo
+        _ = notification.request.content.userInfo
 //        showAlert(withUserInfo: userInfo)
         
         // Change this to your preferred presentation option
@@ -164,7 +164,7 @@ extension AppDelegate : UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
-        let userInfo = response.notification.request.content.userInfo
+        _ = response.notification.request.content.userInfo
 //        showAlert(withUserInfo: userInfo)
         
         completionHandler()

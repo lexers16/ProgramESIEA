@@ -204,6 +204,7 @@ extension ViewController : UICollectionViewDelegate{
         }
     }
     
+    
     func retrieveData(){
     guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else{return}
     
