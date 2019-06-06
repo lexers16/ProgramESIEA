@@ -72,6 +72,9 @@ class Cells : UICollectionViewCell{//Here is the definition of the cells used on
             self.backgroung.image = imageCache.object(forKey: "https://image.tmdb.org/t/p/w500\(data.Image as! String)" as NSString)
         }else{
         DispatchQueue.main.async() {
+            UIView.animate(withDuration: 0.2, animations: {
+                self.backgroung.alpha = 0
+            })
             img.downloaded(from: "https://image.tmdb.org/t/p/w500\(data.Image as! String)", completionHandler: { (true) in
                 print("https://image.tmdb.org/t/p/w500\(data.Image as! String)")
                 
@@ -80,6 +83,9 @@ class Cells : UICollectionViewCell{//Here is the definition of the cells used on
                 self.datas.Image = img.image?.jpegData(compressionQuality: 1)?.base64EncodedString()
                 guard img.image == nil else { imageCache.setObject(img.image!, forKey: "https://image.tmdb.org/t/p/w500\(data.Image as! String)" as NSString)
                     self.backgroung.image = img.image
+                    UIView.animate(withDuration: 0.2, animations: {
+                        self.backgroung.alpha = 1
+                    })
                     return}
 
             })

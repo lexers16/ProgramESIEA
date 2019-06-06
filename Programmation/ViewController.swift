@@ -14,65 +14,32 @@ import CoreData
 class ViewController: UIViewController {
     let cellIdentifier = "CellIdentifier"
     let link = "https://api.themoviedb.org/4/list/1?page=1&api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR"
-let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa493459356483ae71ef32311be3b&language=en-US"
+    let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa493459356483ae71ef32311be3b&language=en-US"
     var dict =  Dictionary<String , Any>()
     var dictionnary = NSDictionary()
     let background = UIImageView()
     let catView = UITableView()
+    let titleView = UILabel()
     var categoriesArray = [categories]()
     var tmpDict : [moviesDatabase] = [moviesDatabase]()
-    var seachBar : UISearchBar = UISearchBar()
-    var tableSearch : UITableView = UITableView()
-    var searchResults : [moviesDatabase] = [moviesDatabase]()
-    let appDelegate = UIApplication.shared.delegate as! AppDelegate
-    var context = NSManagedObjectContext()
     var CategorySelector : UINavigationItem!
     var catTapped = false
-
     var table : UICollectionView!
-    
-    func setCoreData(){
-        context = appDelegate.persistentContainer.viewContext
-        let entity = NSEntityDescription.entity(forEntityName: "Datas", in: context)
-    }
-    
-    func saveData(){
-        do {
-            try context.save()
-        } catch {
-            print("Failed saving")
-        }
-    }
-    
-    func fecthdata(){
-        let request = NSFetchRequest<NSFetchRequestResult>(entityName: "Users")
-        //request.predicate = NSPredicate(format: "age = %@", "12")
-        request.returnsObjectsAsFaults = false
-        do {
-            let result = try context.fetch(request)
-            for data in result as! [NSManagedObject] {
-                print(data.value(forKey: "username") as! String)
-            }
-            
-        } catch {
-            
-            print("Failed")
-        }
-    }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-        setCoreData()
-        seachBar.delegate = self
+        retrieveData()
+        loadCat()
+        titleView.frame = CGRect(x: 0 ,y: (navigationController?.navigationBar.frame.maxY)!, width: self.view.frame.width, height: 60)
+        titleView.text = "Most rated Marvel Movies"
+        titleView.textAlignment = .center
+        titleView.font = .boldSystemFont(ofSize: 40)
+        titleView.textColor = UIColor.white
+        
+        catView.alpha = 0.5
         
         self.title = "Movie rater"
         catView.frame = CGRect(x: self.view.frame.width, y: 0, width: self.view.frame.width/2, height: self.view.frame.height)
-        
-        
-        seachBar.frame = CGRect(x: self.view.safeAreaInsets.left, y: (self.navigationController?.navigationBar.frame.maxY)!, width: self.view.bounds.width, height: 40)
-        seachBar.returnKeyType = .go
-        tableSearch.frame = CGRect(x: self.view.safeAreaInsets.left, y: seachBar.frame.maxY, width: self.view.bounds.width, height: self.view.bounds.height - seachBar.frame.maxY)
-        tableSearch.alpha = 0
         catView.register(UITableViewCell.self, forCellReuseIdentifier: "CellResult")
         
         catView.dataSource = self
@@ -82,12 +49,14 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         layout.sectionInset = UIEdgeInsets(top: 50, left: 10, bottom: 5, right: 10)
         layout.itemSize = CGSize(width: 100, height: 150)
         layout.scrollDirection = .vertical
-        table = UICollectionView(frame: CGRect(x: 0, y: 0, width: self.view.frame.width, height: self.view.frame.height), collectionViewLayout: layout)
+        table = UICollectionView(frame: CGRect(x: 0, y: titleView.frame.maxY, width: self.view.frame.width, height: self.view.frame.height - titleView.frame.height), collectionViewLayout: layout)
         
         background.frame = CGRect(x: 0,y: 0,width: self.view.frame.width*5,height: self.view.frame.height)
-        background.image = UIImage(named: "avengers-comic-con")
-        self.view.addSubview(background)
-
+        //        background.image = UIImage(named: "avengers-comic-con")
+        //        background.alpha = 0.5
+        //        self.view.addSubview(background)
+        self.view.backgroundColor = UIColor.black
+        
         self.view.addSubview(table)
         table.dataSource = self
         table.delegate = self
@@ -95,17 +64,20 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         table.register(Cells.self, forCellWithReuseIdentifier: "MyCell")
         
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Category", style: .plain, target: self, action: #selector(barAction))
-        
-        self.view.addSubview(seachBar)
         self.view.addSubview(catView)
-        loadfromserver(urlLink: link)
+        self.view.addSubview(titleView)
+        loadfromserver(urlLink: link, completion: {(true) in
+            self.creatdata()
+        })
+        
     }
     
-    @objc func barAction(sender: UIBarButtonItem) {
+    @objc func barAction() {
         // Function body goes here
         print("Tapped")
         if !catTapped{
             UIView.animate(withDuration: 0.3, animations: {
+                self.titleView.alpha = 0
                 self.table.frame.origin.x -= self.view.frame.width/2
                 self.catView.frame.origin.x -= self.view.frame.width/2
             }) { (true) in
@@ -114,6 +86,7 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         }else{
             UIView.animate(withDuration: 0.3, animations: {
                 self.table.frame.origin.x = 0
+                self.titleView.alpha = 1
                 self.catView.frame.origin.x = self.view.frame.width
             }) { (true) in
                 self.catTapped = false
@@ -129,28 +102,7 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         }, completion: nil)
         }
     }
-    
-    func  loadData(searchedText : String,completionHandler: ((Bool)->Void)?){
-        var lien = "https://api.themoviedb.org/3/search/movie?api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR&query=\(searchedText)&page=1&include_adult=false"
-        Alamofire.request(lien, parameters: nil ,headers: nil) .responseJSON { response in
-            if response.result.value != nil {
-                self.searchResults.removeAll()
-                let test = response.result.value as! NSDictionary
-                let valu = test["results"] as! NSArray
-                for key in valu{
-                    var tmpMovie : moviesDatabase = moviesDatabase(Title: (key as! NSDictionary)["title"] as? String, description: (key as! NSDictionary)["overview"] as? String, Image:(key as! NSDictionary)["poster_path"] as? String)
-                    let value = key as? NSDictionary
-                    if self.searchResults.contains(where: { ($0 ).description == tmpMovie.description }) {
-                        // 1 is found
-                    }
-                    self.searchResults.append(tmpMovie)
-                    completionHandler!(true)
-                }
-            }
-
-        }
-    }
-    func loadfromserver(urlLink : String){
+    func loadfromserver(urlLink : String,completion :  @escaping (Bool) -> Void){
         var count = 0
         Alamofire.request(urlLink, parameters: nil ,headers: nil) .responseJSON { response in
             if response.result.value != nil {
@@ -160,15 +112,19 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
                 for Style in (valu as? NSArray)!{
                     print((Style as! NSDictionary)["title"] as Any)
                     self.dict["\(count)"] = moviesDatabase(Title: (Style as! NSDictionary)["title"] as? String, description: (Style as! NSDictionary)["overview"] as? String, Image:(Style as! NSDictionary)["poster_path"] as? String)
+                    self.tmpDict.append(self.dict["\(count)"] as! moviesDatabase)
                     count += 1
                 }
                 self.dictionnary = self.dict as NSDictionary
                 print(self.dictionnary)
+                completion(true)
                 self.table.reloadData()
                 self.catView.reloadData()
                 }
+            }
         }
-        
+    
+    func loadCat(){
         let lien = self.getGenre
         Alamofire.request(lien, parameters: nil ,headers: nil) .responseJSON { response in
             if response.result.value != nil {
@@ -176,11 +132,11 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
                 let valu = test["genres"] as! NSArray
                 for key in valu{
                     self.categoriesArray.append(categories(Name: (key as! NSDictionary)["name"] as? String,id : String((key as! NSDictionary)["id"] as! Int)))
-                
+                    
                 }
             }
         }
-        }
+    }
     func convertToDictionary(text: String) -> [String: Any]? {
         if let data = text.data(using: .utf8) {
             do {
@@ -192,45 +148,7 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         return nil
     }
 }
-extension ViewController : UISearchBarDelegate {
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        print(searchBar.text as Any)
-        if(searchBar.text != "" && !self.view.subviews.contains(tableSearch)){
-            self.view.addSubview(tableSearch)
-            UIView.animate(withDuration: 0.2) {
-                self.tableSearch.alpha = 1
-            }}
-        if searchBar.text!.count >= 3 {
-        DispatchQueue.main.async {
-            self.loadData(searchedText : searchBar.text ?? "", completionHandler: {(true) in
-                self.tableSearch.reloadSections(IndexSet(integer: 0), with: .automatic)
-            })
-            
-            }
-        }
-        if(searchBar.text == "" && self.view.subviews.contains(tableSearch)){
-            self.view.addSubview(tableSearch)
-            UIView.animate(withDuration: 0.2, animations: {
-                self.tableSearch.alpha = 0
-            }) { (true) in
-                self.tableSearch.removeFromSuperview()
-            }
-        }
-    }
-    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        searchBar.endEditing(true)
-    }
 
-    
-    func searchBarTextDidEndEditing(_ searchBar: UISearchBar) {
-        self.view.addSubview(tableSearch)
-        UIView.animate(withDuration: 0.2, animations: {
-            self.tableSearch.alpha = 0
-        }) { (true) in
-            self.tableSearch.removeFromSuperview()
-        }
-    }
-}
 extension ViewController : UICollectionViewDelegate{
     func collectionView(_ CollectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         print(indexPath)
@@ -261,20 +179,60 @@ extension ViewController : UICollectionViewDelegate{
         }
     }
     
+    func creatdata(){
+        
+        
+        guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else{return}
+        
+        let managedContext = appDelegate.persistentContainer.viewContext
+        
+        let userEntity = NSEntityDescription.entity(forEntityName: "Datas", in: managedContext)!
+        
+        for movies in tmpDict {
+            let movie = NSManagedObject(entity: userEntity, insertInto: managedContext)
+            movie.setValue(movies.description, forKey: "movie_description")
+            movie.setValue(movies.Image, forKey: "images")
+            movie.setValue(movies.Title, forKey: "title")
+            print("movie \(movies.Title) enrg")
+        }
+        
+        do {
+            try managedContext.save()
+            
+        }catch let error as NSError{
+            print("could not save ")
+        }
+    }
+    
+    func retrieveData(){
+    guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else{return}
+    
+    let managedContext = appDelegate.persistentContainer.viewContext
+    
+        let fetch = NSFetchRequest<NSFetchRequestResult>(entityName: "Datas")
+        
+        do {
+            let results = try managedContext.fetch(fetch)
+            var count = 0
+            for data in results as! [NSManagedObject]{
+                dict["\(count)"] = moviesDatabase(Title: data.value(forKey: "title") as? String, description: data.value(forKey: "movie_description") as? String, Image: data.value(forKey: "images") as? String)
+                dictionnary = dict as NSDictionary
+                count += 1
+            }
+        }
+        catch{
+            print("raté")
+            
+        }
+        
+        
+    }
+    
 }
 extension ViewController : UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return dictionnary.allKeys.count
     }
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        if (seachBar.text!.count <= 0){
-            self.seachBar.endEditing(true)
-        }
-    }
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        self.seachBar.endEditing(true)
-    }
-
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "MyCell", for: indexPath) as! Cells
         cell.cellTitle.text = (dictionnary.value(forKey: ("\(indexPath.row)")) as! moviesDatabase).Title
@@ -284,8 +242,6 @@ extension ViewController : UICollectionViewDataSource {
         }
         return cell
     }
-
-
     func CollectionView(_ CollectionView: UICollectionView, viewForFooterInSection section: Int) -> UIView? {
         return UIView()
     }
@@ -293,7 +249,9 @@ extension ViewController : UICollectionViewDataSource {
 extension ViewController : UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tmpDict.removeAll()
-        loadfromserver(urlLink: "https://api.themoviedb.org/3/discover/movie?api_key=e2afa493459356483ae71ef32311be3b&with_genres=\(categoriesArray[indexPath.row].id ?? "0")")
+        self.titleView.text = categoriesArray[indexPath.row].Name
+        loadfromserver(urlLink: "https://api.themoviedb.org/3/discover/movie?api_key=e2afa493459356483ae71ef32311be3b&with_genres=\(categoriesArray[indexPath.row].id ?? "0")", completion: {(true) in })
+        barAction()
     }
 }
 extension ViewController : UITableViewDataSource {
@@ -303,8 +261,7 @@ extension ViewController : UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CellResult", for: indexPath)
         cell.textLabel?.text = categoriesArray[indexPath.row].Name
+        
         return cell
     }
 }
-
-
