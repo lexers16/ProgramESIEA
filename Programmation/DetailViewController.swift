@@ -62,14 +62,26 @@ class DetailViewController: UIViewController {
         })
     }
     
-    func setdata(data : NSDictionary,link : String,bg : UIImage){
-        self.Image.image = bg
-        self.MovieDescription.text = data["overview"] as? String
-        self.Title.text = data["title"] as? String
-        if(imageCache.object(forKey: "https://image.tmdb.org/t/p/w500/" + (data["poster_path"] as! String) as NSString) != nil){
-            self.Image.image = imageCache.object(forKey: "https://image.tmdb.org/t/p/w500/" + (data["poster_path"] as! String) as NSString)
+    func setdata(data : moviesDatabase,link : String){
+        let img :UIImageView = UIImageView()
+//        if(data.Image?.first=='/'){
+//            img.downloaded(from: data.Image, completionHandler: {
+//                (true) in
+//                
+//            })
+//            
+//            
+//        }
+        img.image = UIImage.init(data: Data(base64Encoded: data.Image!)!)
+        self.MovieDescription.text = data.description
+        self.Title.text = data.Title
+        if(imageCache.object(forKey: data.Image! as NSString) != nil){
+            self.Image.image = imageCache.object(forKey: data.Image! as NSString)
+        }else{
+            Image.image = img.image
         }
-        self.title = data["title"] as? String
+        self.title = data.Title
+            
     }
     
     func getData(from url: URL, completion: @escaping (Data?, URLResponse?, Error?) -> ()) {
