@@ -65,6 +65,7 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         setCoreData()
         seachBar.delegate = self
         
+        self.title = "Movie rater"
         catView.frame = CGRect(x: self.view.frame.width, y: 0, width: self.view.frame.width/2, height: self.view.frame.height)
         
         
@@ -97,7 +98,7 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
         
         self.view.addSubview(seachBar)
         self.view.addSubview(catView)
-        loadfromserver()
+        loadfromserver(urlLink: link)
     }
     
     @objc func barAction(sender: UIBarButtonItem) {
@@ -118,12 +119,6 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
                 self.catTapped = false
             }
         }
-        
-        for cat in categoriesArray{
-        
-            
-        }
-        
     }
     override func viewDidAppear(_ animated: Bool) {
         self.navigationController?.isToolbarHidden = true
@@ -152,28 +147,18 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
                     completionHandler!(true)
                 }
             }
-            lien = getGenre
-            Alamofire.request(lien, parameters: nil ,headers: nil) .responseJSON { response in
-                if response.result.value != nil {
-                    
-                    
-                    
-                    
-                }
-            
-            
+
         }
     }
-    func loadfromserver(){
+    func loadfromserver(urlLink : String){
         var count = 0
-        Alamofire.request(link, parameters: nil ,headers: nil) .responseJSON { response in
+        Alamofire.request(urlLink, parameters: nil ,headers: nil) .responseJSON { response in
             if response.result.value != nil {
                 let test = response.result.value as! NSDictionary
                 let valu = test["results"]
                 
                 for Style in (valu as? NSArray)!{
                     print((Style as! NSDictionary)["title"] as Any)
-                    self.categoriesArray.append(categories(Name: (Style as! NSDictionary)["title"] as? String))
                     self.dict["\(count)"] = moviesDatabase(Title: (Style as! NSDictionary)["title"] as? String, description: (Style as! NSDictionary)["overview"] as? String, Image:(Style as! NSDictionary)["poster_path"] as? String)
                     count += 1
                 }
@@ -182,6 +167,18 @@ let getGenre = "https://api.themoviedb.org/3/genre/movie/list?api_key=e2afa49345
                 self.table.reloadData()
                 self.catView.reloadData()
                 }
+        }
+        
+        let lien = self.getGenre
+        Alamofire.request(lien, parameters: nil ,headers: nil) .responseJSON { response in
+            if response.result.value != nil {
+                let test = response.result.value as! NSDictionary
+                let valu = test["genres"] as! NSArray
+                for key in valu{
+                    self.categoriesArray.append(categories(Name: (key as! NSDictionary)["name"] as? String,id : String((key as! NSDictionary)["id"] as! Int)))
+                
+                }
+            }
         }
         }
     func convertToDictionary(text: String) -> [String: Any]? {
@@ -295,7 +292,8 @@ extension ViewController : UICollectionViewDataSource {
 }
 extension ViewController : UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        
+        tmpDict.removeAll()
+        loadfromserver(urlLink: "https://api.themoviedb.org/3/discover/movie?api_key=e2afa493459356483ae71ef32311be3b&with_genres=\(categoriesArray[indexPath.row].id ?? "0")")
     }
 }
 extension ViewController : UITableViewDataSource {

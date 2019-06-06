@@ -28,6 +28,7 @@ protocol Archivable: Codable {
 
 struct categories : Archivable {
     var Name : String?
+    var id : String?
 }
 
 
