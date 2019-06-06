@@ -55,6 +55,7 @@ import CoreData
 ```html "https://api.themoviedb.org/4/list/1?page=1&api_key=e2afa493459356483ae71ef32311be3b&language=fr-FR"```
 - Ecrans de chargement
 - Readme
+- Animation entre écrans
 - Push Notifications
 
 ## Captures d'écran : 
